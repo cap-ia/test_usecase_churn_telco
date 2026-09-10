@@ -3,12 +3,12 @@ name: Build and Push to Docker Hub
 on:
   push:
     branches: [main]
-  
-jobs: 
+    
+jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
-    setps:
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
