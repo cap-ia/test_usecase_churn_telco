@@ -3,11 +3,15 @@ import pandas as pd
 import mlflow
 from pandas.api.types import is_string_dtype
 
-MODEL_DIR = "/app/model"
+from pathlib import Path
+
+#MODEL_DIR = "/app/model"
+MODEL_DIR = Path(__file__).resolve().parent / "model" / "current"
 THRESHOLD = 0.35
 
 try:
-    model = mlflow.pyfunc.load_model(MODEL_DIR)
+    #model = mlflow.pyfunc.load_model(MODEL_DIR)
+    model = mlflow.xgboost.load_model(str(MODEL_DIR))
     print(f"Model loaded successfully from {MODEL_DIR}")
 except Exception as e:
     print(f"Failed to load model from {MODEL_DIR}: {e}")
@@ -41,7 +45,8 @@ def serve_transform(df: pd.DataFrame) -> pd.DataFrame:
             df[c] = pd.to_numeric(df[c], errors="coerce")
             df[c] = df[c].fillna(0)
 
-    for c, mapping in BINARY_MAP:
+    #for c, mapping in BINARY_MAP:
+    for c, mapping in BINARY_MAP.items():
         if c in df.columns:
             df[c] = (df[c].astype(str).str.strip().map(mapping).astype("Int64").fillna(0).astype(int))
 
