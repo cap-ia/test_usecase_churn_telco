@@ -43,7 +43,7 @@ gradio_client==2.6.1
 graphene==3.4.3
 graphql-core==3.2.12
 graphql-relay==3.2.0
-great_expectations
+#great_expectations
 greenlet==3.5.5
 groovy==0.1.2
 gunicorn==26.2.0
