@@ -241,7 +241,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
 
                     partner_input = gr.Dropdown(
                         choices=["Yes", "No"],
-                        value="No",
+                        value="Yes",
                         label="Partner",
                         info="Does anyone depend financially on the customer?",
                         show_label=True
@@ -256,7 +256,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                     )
 
                     tenure_input = gr.Number(
-                        value=4,
+                        value=6,
                         minimum=0,
                         maximum=100,
                         label="Tenure",
@@ -298,7 +298,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                     )
 
                     total_charges_input = gr.Number(
-                        value=100.0,
+                        value=300.0,
                         minimum=0,
                         maximum=10000,
                         label="Total Charges ($)",
@@ -314,7 +314,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
 
                     online_security_input = gr.Dropdown(
                         choices=["Yes", "No", "No internet service"],
-                        value="Yes",
+                        value="No",
                         label="Online Security",
                         info="Does the customer have online security?",
                         show_label=True
@@ -322,7 +322,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
 
                     online_backup_input = gr.Dropdown(
                         choices=["Yes", "No", "No internet service"],
-                        value="Yes",
+                        value="No",
                         label="Online Backup",
                         info="Does the customer have online backup?",
                         show_label=True
@@ -512,4 +512,4 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
     )
 
 
-app = gr.mount_gradio_app(app, demo, path="/ui", theme=newspaper_theme, head=GRADIO_HEAD)
+app = gr.mount_gradio_app(app, demo, path="/churn-predictor_demo_cap-ia", theme=newspaper_theme, head=GRADIO_HEAD)
