@@ -62,19 +62,28 @@ def serve_transform(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-
-def predict(input_dict: dict) -> str:
+def predict_details(input_dict: dict) -> dict:
     try:
-        df = pd.DataFrame([input_dict])
-        df_enc = serve_transform(df)
+        raw_data = pd.DataFrame([input_dict])
+        encoded_data = serve_transform(raw_data)
 
-        probability = float(model.predict_proba(df_enc)[0, 1])
-        result = int(probability >= THRESHOLD)
+        probability = float(model.predict_proba(encoded_data)[0, 1])
+        is_churn = probability >= THRESHOLD
+
+        prediction = "Likely to churn" if is_churn else "Not likely to churn"
+
+        return{
+            "prediction": prediction,
+            "probability": probability,
+            "threshold": THRESHOLD,
+            "is_churn": is_churn,
+            "encoded_data": encoded_data,
+        }
 
     except Exception as e:
         raise RuntimeError(f"Model prediction failed: {e}") from e
 
-    if result == 1:
-        return "Likely to churn"
 
-    return "Not likely to churn"
+def predict(input_dict: dict) -> str:
+    details = predict_details(input_dict)
+    return details["prediction"]
