@@ -3,9 +3,29 @@ from pydantic import BaseModel
 import gradio as gr
 from src.serving.inference import predict, predict_details
 from src.serving.visualizations import create_risk_gauge, create_shap_chart
+import base64
+from pathlib import Path
+
+FAVICON_PATH = (
+    Path(__file__).resolve().parent
+    / "assets"
+    / "favicon.png"
+)
+
+favicon_base64 = base64.b64encode(
+    FAVICON_PATH.read_bytes()
+).decode("utf-8")
+
+GRADIO_HEAD = f"""
+<link
+    rel="icon"
+    type="image/png"
+    href="data:image/png;base64,{favicon_base64}"
+>
+"""
 
 try:
-    newspaper_theme = gr.Theme.from_hub("hmb/amethyst")
+    newspaper_theme = gr.Theme.from_hub("YTheme/TehnoX")
 except Exception as error:
     print(f"Could not load Newspaper theme: {error}")
     newspaper_theme = gr.themes.Soft()
@@ -80,13 +100,52 @@ def gradio_interface(gender, Partner, Dependents, PhoneService, MultipleLines, I
     try:
         # Cette fonction devra retourner les détails de la prédiction
         result = predict_details(data)
-        prediction_text = (f"{result['prediction']} ({result['probability']:.1%})")
+        high_risk = result["probability"] >= result["threshold"]
+
+        if high_risk:
+            color = "#ff6366"
+            background = "rgba(255, 99, 102, 0.12)"
+            risk_level = "High churn risk"
+        else:
+            color = "#42ce7a"
+            background = "rgba(66, 206, 122, 0.12)"
+            risk_level = "Low churn risk"
+
+        prediction_html = f"""
+        <div style="
+            width: 100%;
+            padding: 14px 18px;
+            box-sizing: border-box;
+            border: 1px solid {color};
+            border-radius: 9px;
+            background: {background};
+            color: {color};
+        ">
+            <div style="
+                margin-bottom: 4px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                opacity: 0.8;
+            ">
+                {risk_level}
+            </div>
+
+            <div style="
+                font-size: 1.05rem;
+                font-weight: 700;
+            ">
+                {result["prediction"]} ({result["probability"]:.1%})
+            </div>
+        </div>
+        """
 
         gauge_figure = create_risk_gauge(probability=result["probability"], threshold=result["threshold"])
         shap_figure = create_shap_chart(encoded_data=result["encoded_data"])
 
         return (
-            prediction_text,
+            prediction_html,
 
             # Rend la jauge visible
             gr.Plot(
@@ -108,29 +167,65 @@ def gradio_interface(gender, Partner, Dependents, PhoneService, MultipleLines, I
 
     
 # GRADIO USER INTERFACE
-with gr.Blocks(fill_width=True) as demo:
+with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
 
     # Ligne principale :
     # espace gauche | formulaire central | espace droit
     with gr.Row():
-
+        
         # Espace vide à gauche
         with gr.Column(scale=1, min_width=0):
             gr.HTML("")
 
         with gr.Column(scale=0, min_width=800):
 
-            gr.Markdown(
-                """
-                # Telco Customer Churn Predictor
+            gr.HTML(
+            """
+            <section style="
+                max-width: 760px;
+                margin: 0 auto 32px auto;
+                text-align: center;
+            ">
+                <p style="
+                    margin: 0 0 8px 0;
+                    font-size: 0.78rem;
+                    font-weight: 600;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
+                    opacity: 0.65;
+                ">
+                    Educational Machine Learning Demo
+                </p>
 
-                **Predict customer churn probability using machine learning**
+                <h1 style="
+                    margin: 0 0 14px 0;
+                    color: #7373E6;
+                    font-size: 2.2rem;
+                    line-height: 1.2;
+                ">
+                    Telco Customer Churn Predictor
+                </h1>
 
-                Fill in the customer details below to get a churn prediction.
+                <p style="
+                    margin: 0 0 10px 0;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                ">
+                    Estimate churn risk and understand the factors behind each prediction.
 
-                💡 **Tip:** Month-to-month contracts with fiber optic internet and electronic check payments tend to have higher churn rates.
-                """
-            )
+                <p style="
+                    max-width: 650px;
+                    margin: 0 auto;
+                    line-height: 1.6;
+                    opacity: 0.78;
+                ">
+                    Enter the customer's account, service and billing information.
+                    The model will estimate their churn probability and identify the
+                    features that influenced the prediction.
+                </p>
+            </section>
+            """
+        )
 
             with gr.Row(equal_height=False):
 
@@ -326,13 +421,11 @@ with gr.Blocks(fill_width=True) as demo:
             # =================================================
             # PREDICTION RESULT
             # =================================================
-            prediction_output = gr.Textbox(
-                label="Churn Prediction",
-                lines=1,
-                interactive=False,
-                show_label=True
+            prediction_output = gr.HTML(
+                container=True,
+                padding=True,
             )
-                    # Espace vide à droite
+        # Espace vide à droite
         with gr.Column(scale=1, min_width=0):
             gr.HTML("")
 
@@ -352,21 +445,35 @@ with gr.Blocks(fill_width=True) as demo:
             visible=False,
             scale=3
         )
-
+    gr.Markdown("""</p>
+                        <strong>Data notice:</strong> This educational application uses an anonymized sample dataset provided by IBM and made publicly available on 
+                        <a href=https://www.kaggle.com/datasets/blastchar/telco-customer-churn/data>Kaggle</a>.
+    </p>""")
     # Le bloc Examples reste après les graphiques 
     with gr.Accordion("Example customers", open=False):
+        # Champ caché utilisé uniquement comme première colonne du tableau
+        risk_profile_input = gr.Textbox(
+            label="Risk profile",
+            visible=False,
+            interactive=False,
+        )
+
+        gr.Markdown(
+        """
+        💡 **Tip:** Month-to-month contracts with fiber optic internet and electronic check payments tend to have higher churn rates.
+        """
+        )
         gr.Examples(
             examples=[
                 # High churn risk
-                ["Male", "No", "No", "No", "No", "Fiber optic", "No", "No", "No", "No", 
-                 "Yes", "Yes", "Month-to-month", "Yes", "Electronic check", 1, 40.0, 40.0],
+                ["High churn risk", "Male", "No", "No", "No", "No", "Fiber optic", "No", "No", "No", "No", "Yes", "Yes", "Month-to-month", "Yes", "Electronic check", 1, 40.0, 40.0],
 
                 # Low churn risk
-                ["Male", "Yes", "Yes", "Yes", "Yes", "DSL", "Yes", "Yes", "Yes", "Yes", 
-                 "No", "No", "Two year", "No", "Credit card (automatic)", 24, 30.0, 720.0]
+                ["Low churn risk", "Female", "Yes", "Yes", "Yes", "Yes", "DSL", "Yes", "Yes", "Yes", "Yes", "No", "No", "Two year", "No", "Credit card (automatic)", 24, 30.0, 720.0]
             ],
-            inputs=all_inputs
+            inputs=[risk_profile_input, *all_inputs],
         )
+
     gr.HTML(
         """
         <footer style="
@@ -378,18 +485,19 @@ with gr.Blocks(fill_width=True) as demo:
             font-size: 0.85rem;
             opacity: 0.8;
         ">
-            Cette application interactive de prédiction et son modèle de machine learning ont été développés par 
+            This interactive prediction application and its machine learning model were developed by
             <a href="https://www.u-bordeaux.fr/universite/notre-strategie/nos-leviers/cma-competences-et-metiers-davenir/cap-ia"
-            target="_blank"
-            rel="noopener noreferrer"><strong>CAP IA</strong></a>.
-            Code source distribué sous
-            <a href="https://opensource.org/license/mit"
-            target="_blank"
-            rel="noopener noreferrer">licence MIT</a>.
+            target="_blank" rel="noopener noreferrer"><strong>CAP IA</strong></a>.
+            The source code is available on
+            <a href="https://github.com/cap-ia/test_usecase_churn_telco"
+            target="_blank" rel="noopener noreferrer">GitHub</a>
+            and released under the
+            <a href="https://opensource.org/license/mit" target="_blank" rel="noopener noreferrer">MIT License</a>.
         </footer>
         """
-
     )
+
+
     # ========================================================
     # PREDICTION EVENT
     # ========================================================
@@ -404,4 +512,4 @@ with gr.Blocks(fill_width=True) as demo:
     )
 
 
-app = gr.mount_gradio_app(app, demo, path="/ui", theme=newspaper_theme)
+app = gr.mount_gradio_app(app, demo, path="/ui", theme=newspaper_theme, head=GRADIO_HEAD)

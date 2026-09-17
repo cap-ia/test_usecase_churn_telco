@@ -63,14 +63,23 @@ def create_risk_gauge(probability: float, threshold: float = 0.35) -> go.Figure:
     # Le statut est maintenant placé sous la jauge
     figure.add_annotation(
         x=0.5,
-        y=0.14,
+        y=0.015,
         xref="paper",
         yref="paper",
-        text=f"<b>{status}</b>",
+        text=(
+            "The gauge compares the predicted churn probability with the "
+            "decision threshold.<br>"
+            f"Values at or above <b>{threshold:.0%}</b> are classified as "
+            "likely to churn."
+        ),
         showarrow=False,
         xanchor="center",
-        yanchor="middle",
-        font={"size": 17, "color": color},
+        yanchor="bottom",
+        align="center",
+        font={
+            "size": 12,
+            "color": "rgba(255,255,255,0.65)",
+        },
     )
 
     figure.update_layout(
@@ -140,24 +149,6 @@ def create_shap_chart(encoded_data: pd.DataFrame, top_n: int = 8) -> go.Figure:
     negative_features = top_features[top_features["contribution"] < 0]
 
     figure = go.Figure()
-    if not positive_features.empty:
-        figure.add_trace(
-            go.Bar(
-                x=positive_features["contribution"],
-                y=positive_features["display_name"],
-                orientation="h",
-                name="Increases churn risk",
-                marker_color="#ff6366",
-                text=[f"{value:+.3f}" for value in positive_features["contribution"]],
-                textposition="outside",
-                cliponaxis=False,
-                hovertemplate=(
-                    "%{y}<br>"
-                    "SHAP contribution: %{x:.4f}"
-                    "<extra></extra>"
-                ),
-            )
-        )
 
     if not negative_features.empty:
         figure.add_trace(
@@ -178,10 +169,48 @@ def create_shap_chart(encoded_data: pd.DataFrame, top_n: int = 8) -> go.Figure:
             )
         )
 
+        if not positive_features.empty:
+            figure.add_trace(
+                go.Bar(
+                    x=positive_features["contribution"],
+                    y=positive_features["display_name"],
+                    orientation="h",
+                    name="Increases churn risk",
+                    marker_color="#ff6366",
+                    text=[f"{value:+.3f}" for value in positive_features["contribution"]],
+                    textposition="outside",
+                    cliponaxis=False,
+                    hovertemplate=(
+                        "%{y}<br>"
+                        "SHAP contribution: %{x:.4f}"
+                        "<extra></extra>"
+                    ),
+                )
+            )
+            
     figure.add_vline(
         x=0,
         line_width=2,
         line_color="#f8fafc",
+    )
+
+    figure.add_annotation(
+        x=0.5,
+        y=-0.16,
+        xref="paper",
+        yref="paper",
+        text=(
+            "SHAP values measure how each feature moves this customer's prediction away from the model baseline.<br>"
+            "Red increases the churn score, while green decreases it."
+        ),
+        showarrow=False,
+        xanchor="center",
+        yanchor="top",
+        align="center",
+        font={
+            "size": 12,
+            "color": "rgba(255,255,255,0.65)",
+        },
     )
 
     figure.update_yaxes(
@@ -197,11 +226,10 @@ def create_shap_chart(encoded_data: pd.DataFrame, top_n: int = 8) -> go.Figure:
     )
 
     figure.update_layout(
-        title={"text": "Factors explaining the prediction", "x": 0.02},
         template="plotly_dark",
         barmode="relative",
         height=max(380, 55 * len(top_features) + 130),
-        margin={"l": 190, "r": 70, "t": 90, "b": 65},
+        margin={"l": 190, "r": 70, "t": 90, "b": 120},
         legend={
             "orientation": "h",
             "yanchor": "bottom",
