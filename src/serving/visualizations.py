@@ -6,7 +6,6 @@ import xgboost as xgb
 from src.serving.inference import model
 
 def create_risk_gauge(probability: float, threshold: float = 0.35) -> go.Figure:
-
     probability = float(np.clip(probability, 0, 1))
     threshold = float(np.clip(threshold, 0, 1))
 
@@ -15,10 +14,8 @@ def create_risk_gauge(probability: float, threshold: float = 0.35) -> go.Figure:
 
     if probability >= threshold:
         color = "#ff6366"
-        status = "Likely to churn"
     else:
         color = "#42ce7a"
-        status = "Not likely to churn"
 
     figure = go.Figure(
         go.Indicator(
@@ -33,9 +30,7 @@ def create_risk_gauge(probability: float, threshold: float = 0.35) -> go.Figure:
             title={
                 "text": (
                     "Churn risk"
-                    f"<br><span style='font-size:0.75em'>"
-                    f"Threshold: {threshold_percent:.0f}%"
-                    "</span>"
+                    f"<br><span style='font-size:0.75em'>Threshold: {threshold_percent:.0f}%</span>"
                 ),
                 "font": {"size": 22, "color": "#f8fafc"},
             },
@@ -60,26 +55,20 @@ def create_risk_gauge(probability: float, threshold: float = 0.35) -> go.Figure:
         )
     )
 
-    # Le statut est maintenant placé sous la jauge
     figure.add_annotation(
         x=0.5,
         y=0.015,
         xref="paper",
         yref="paper",
         text=(
-            "The gauge compares the predicted churn probability with the "
-            "decision threshold.<br>"
-            f"Values at or above <b>{threshold:.0%}</b> are classified as "
-            "likely to churn."
+            "The gauge compares the predicted churn probability with the decision threshold.<br>"
+            f"Values at or above <b>{threshold:.0%}</b> are classified as likely to churn."
         ),
         showarrow=False,
         xanchor="center",
         yanchor="bottom",
         align="center",
-        font={
-            "size": 12,
-            "color": "rgba(255,255,255,0.65)",
-        },
+        font={"size": 12, "color": "rgba(255,255,255,0.65)"},
     )
 
     figure.update_layout(
@@ -93,7 +82,7 @@ def create_risk_gauge(probability: float, threshold: float = 0.35) -> go.Figure:
     return figure
 
 
-def _format_feature_name(feature_name: str) -> str:
+def format_feature_name(feature_name: str) -> str:
     """
     Rend le nom d'une variable one-hot plus facile à lire.
 
@@ -127,7 +116,7 @@ def create_shap_chart(encoded_data: pd.DataFrame, top_n: int = 8) -> go.Figure:
     booster = model.get_booster()
 
     # Format attendu par XGBoost
-    data_matrix = xgb.DMatrix(encoded_data, feature_names=feature_names,)
+    data_matrix = xgb.DMatrix(encoded_data, feature_names=feature_names)
 
     # Contributions SHAP natives de XGBoost
     contributions = booster.predict(data_matrix, pred_contribs=True)
@@ -135,16 +124,13 @@ def create_shap_chart(encoded_data: pd.DataFrame, top_n: int = 8) -> go.Figure:
     # La dernière valeur est le biais du modèle
     shap_values = contributions[0, :-1]
 
-    shap_data = pd.DataFrame({
-        "feature": feature_names,
-        "contribution": shap_values,
-    })
+    shap_data = pd.DataFrame({"feature": feature_names, "contribution": shap_values})
 
     shap_data["absolute_contribution"] = (shap_data["contribution"].abs())
-    shap_data["display_name"] = (shap_data["feature"].apply(_format_feature_name))
+    shap_data["display_name"] = (shap_data["feature"].apply(format_feature_name))
 
     # Sélection des variables les plus influentes
-    top_features = (shap_data.nlargest(top_n, "absolute_contribution").sort_values("absolute_contribution"))
+    top_features = shap_data.nlargest(top_n, "absolute_contribution").sort_values("absolute_contribution")
     positive_features = top_features[top_features["contribution"] >= 0]
     negative_features = top_features[top_features["contribution"] < 0]
 
@@ -207,10 +193,7 @@ def create_shap_chart(encoded_data: pd.DataFrame, top_n: int = 8) -> go.Figure:
         xanchor="center",
         yanchor="top",
         align="center",
-        font={
-            "size": 12,
-            "color": "rgba(255,255,255,0.65)",
-        },
+        font={"size": 12, "color": "rgba(255,255,255,0.65)"},
     )
 
     figure.update_yaxes(
