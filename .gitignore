@@ -15,6 +15,7 @@ __pycache__/
 mlruns/
 artifacts/
 data/
+.gradio/flagged/
 
 # BUT keep our bundled serving model in the repo
 !/model/

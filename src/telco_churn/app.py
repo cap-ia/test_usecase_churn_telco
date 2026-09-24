@@ -26,6 +26,7 @@ def ready():
 
 class CustomerData(BaseModel):
     gender: str
+    SeniorCitizen: str
     Partner: str
     Dependents: str
     PhoneService: str

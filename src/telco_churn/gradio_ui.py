@@ -30,7 +30,7 @@ except Exception as error:
     newspaper_theme = gr.themes.Soft()
 
 
-def gradio_interface(gender, Partner, Dependents, PhoneService, MultipleLines, InternetService, OnlineSecurity, OnlineBackup, DeviceProtection, 
+def gradio_interface(gender, SeniorCitizen, Partner, Dependents, PhoneService, MultipleLines, InternetService, OnlineSecurity, OnlineBackup, DeviceProtection, 
                      TechSupport, StreamingTV, StreamingMovies, Contract, PaperlessBilling, PaymentMethod, tenure, MonthlyCharges, TotalCharges):
     """Predict churn from the Gradio form and prepare the displayed results.
     
@@ -38,6 +38,7 @@ def gradio_interface(gender, Partner, Dependents, PhoneService, MultipleLines, I
     """
     data = {
         "gender": gender,
+        "SeniorCitizen": SeniorCitizen,
         "Partner": Partner,
         "Dependents": Dependents,
         "PhoneService": PhoneService,
@@ -179,6 +180,14 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                         value="Female",
                         label="Gender",
                         info="Customer's gender.",
+                    )
+
+                    senior_input = gr.Dropdown(
+                        choices=[("Yes", "1"), ("No", "0")],
+                        value="1",
+                        label="Senior citizen",
+                        info="Is the customer a senior citizen?",
+                        show_label=True,
                     )
 
                     partner_input = gr.Dropdown(
@@ -330,6 +339,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
 
             all_inputs = [
                 gender_input,
+                senior_input,
                 partner_input,
                 dependents_input,
                 phone_service_input,
@@ -384,10 +394,10 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
         gr.Examples(
             examples=[
                 # High churn risk
-                ["High churn risk", "Male", "No", "No", "No", "No", "Fiber optic", "No", "No", "No", "No", "Yes", "Yes", "Month-to-month", "Yes", "Electronic check", 1, 40.0, 40.0],
+                ["High churn risk", "Male", "0", "No", "No", "No", "No phone service", "Fiber optic", "No", "No", "No", "No", "Yes", "Yes", "Month-to-month", "Yes", "Electronic check", 1, 40.0, 40.0],
 
                 # Low churn risk
-                ["Low churn risk", "Female", "Yes", "Yes", "Yes", "Yes", "DSL", "Yes", "Yes", "Yes", "Yes", "No", "No", "Two year", "No", "Credit card (automatic)", 10, 30.0, 300.0]
+                ["Low churn risk", "Female", "1", "Yes", "Yes", "Yes", "Yes", "DSL", "Yes", "Yes", "Yes", "Yes", "No", "No", "Two year", "No", "Credit card (automatic)", 10, 30.0, 300.0],
             ],
             inputs=[risk_profile_input, *all_inputs],
         )

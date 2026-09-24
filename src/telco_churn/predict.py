@@ -60,6 +60,7 @@ def predict_details(values: dict, explain: bool = False) -> dict:
 
     model = load_model()
     raw = pd.DataFrame([values], columns=preprocessing_module.RAW_COLUMNS)
+    raw["SeniorCitizen"] = (pd.to_numeric(raw["SeniorCitizen"], errors="raise").astype("Int64").astype("string"))
     raw["TotalCharges"] = pd.to_numeric(raw["TotalCharges"], errors="coerce").fillna(0.0).astype(float)
     probability = float(model.predict_proba(raw)[0, 1])
     is_churn = probability >= model.threshold

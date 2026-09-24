@@ -12,7 +12,7 @@ RAW_COLUMNS = [
 ]
 
 CATEGORICAL_COLUMNS = [
-    "gender", "Partner", "Dependents", "PhoneService", "MultipleLines", "InternetService", "OnlineSecurity", "OnlineBackup", "DeviceProtection",
+    "gender", "SeniorCitizen", "Partner", "Dependents", "PhoneService", "MultipleLines", "InternetService", "OnlineSecurity", "OnlineBackup", "DeviceProtection",
     "TechSupport", "StreamingTV", "StreamingMovies", "Contract", "PaperlessBilling", "PaymentMethod",
 ]
 
@@ -47,8 +47,9 @@ class FeatureBuilder(BaseEstimator, TransformerMixin):
         if missing:
             raise ValueError(f"Missing input columns: {missing}")
         data = X.loc[:, RAW_COLUMNS].copy()
-        for name in ("SeniorCitizen", "tenure", "MonthlyCharges"):
+        for name in ("tenure", "MonthlyCharges"):
             data[name] = pd.to_numeric(data[name], errors="raise")
+        data["SeniorCitizen"] = pd.to_numeric(data["SeniorCitizen"], errors="raise").astype("Int64").astype("string")
         data["TotalCharges"] = pd.to_numeric(data["TotalCharges"], errors="coerce")
         data["No_internet_service"] = data[SERVICE_COLUMNS].eq("No internet service").all(axis=1).astype(int)
         data["Internet_services_count"] = data[SERVICE_COLUMNS].eq("Yes").sum(axis=1)
