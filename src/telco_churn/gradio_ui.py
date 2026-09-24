@@ -19,7 +19,7 @@ GRADIO_HEAD = f"""
 <link
     rel="icon"
     type="image/png"
-    href="data:image/png;base64,{favicon_base64}"
+    href="data:image/png; base64, {favicon_base64}"
 >
 """
 

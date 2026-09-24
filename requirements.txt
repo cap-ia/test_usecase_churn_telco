@@ -163,3 +163,4 @@ zipp==4.1.0
 plotly
 category_encoders
 lightgbm
+shap

@@ -9,7 +9,7 @@ import pandas as pd
 
 import sys
 from . import preprocessing as preprocessing_module
-sys.modules.setdefault("preprocessing", preprocessing_module)
+#sys.modules.setdefault("preprocessing", preprocessing_module)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,7 +20,7 @@ DEFAULT_URI = "models:/telco_churn_lightgbm_woe@candidate"
 def load_model():
     """Load and cache the fitted churn pipeline from MLflow.
 
-    Uses TELCO_MODEL_URI when it is set; otherwise, loads the model registered under the "candidate" alias.
+    Uses TELCO_MODEL_URI when it is set, otherwise, loads the model registered under the "candidate" alias.
 
     Returns:
         The fitted model, including preprocessing and LightGBM.

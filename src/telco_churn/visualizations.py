@@ -105,7 +105,7 @@ def format_feature_name(feature_name: str) -> str:
 def create_shap_chart(factors, top_n: int = 8) -> go.Figure:
     """Show the features with the largest impact on one churn prediction.
 
-    Positive SHAP values increase the model's churn score; negative values decrease it. These contributions are to the model score, 
+    Positive SHAP values increase the model's churn score, negative values decrease it. These contributions are to the model score, 
     not directly to the predicted probability.
 
     Args:
