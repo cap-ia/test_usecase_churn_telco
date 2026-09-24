@@ -9,11 +9,12 @@ RUN pip install --upgrade pip \
 
 COPY . .
 
-COPY src/serving/model/current/ /app/model/
+COPY model/ /app/model/
+ENV TELCO_MODEL_URI=/app/model
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src
 
 EXPOSE 8000
 
-CMD ["python", "-m", "uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "src.telco_churn.app:app", "--host", "0.0.0.0", "--port", "8000"]

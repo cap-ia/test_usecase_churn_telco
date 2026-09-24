@@ -1,9 +1,10 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+import gradio as gr
 import base64
 from pathlib import Path
 
-import gradio as gr
-
-from .predict import predict_details
+from .predict import load_model, predict, predict_details
 from .visualizations import create_risk_gauge, create_shap_chart
 
 
@@ -30,12 +31,56 @@ except Exception as error:
     newspaper_theme = gr.themes.Soft()
 
 
+app = FastAPI(
+    title = "Telco Customer Churn Prediction API",
+    description = "ML API for predicting customer churn in telecom industry",
+    version = "1.0.0"
+)
+
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
+
+@app.get("/health/ready")
+def ready():
+    load_model()
+    return {"status": "ready"}
+
+class CustomerData(BaseModel):
+    gender: str
+    Partner: str
+    Dependents: str
+    PhoneService: str
+    MultipleLines: str
+    InternetService: str
+    OnlineSecurity: str
+    OnlineBackup: str
+    DeviceProtection: str
+    TechSupport: str
+    StreamingTV: str
+    StreamingMovies: str
+    Contract: str
+    PaperlessBilling: str
+    PaymentMethod: str
+    tenure: int
+    MonthlyCharges: float
+    TotalCharges: float
+
+
+@app.post("/predict")
+def get_prediction(data: CustomerData):
+    try:
+        result = predict(data.dict)
+        return {"prediction": result}
+    except Exception as e:
+        return {"error": str(e)}
+
+# ============================================================
+# GRADIO PREDICTION FUNCTION
+# ============================================================
 def gradio_interface(gender, Partner, Dependents, PhoneService, MultipleLines, InternetService, OnlineSecurity, OnlineBackup, DeviceProtection, 
                      TechSupport, StreamingTV, StreamingMovies, Contract, PaperlessBilling, PaymentMethod, tenure, MonthlyCharges, TotalCharges):
-    """Predict churn from the Gradio form and prepare the displayed results.
-
-    Arguments must follow the order of `all_inputs`. Returns the prediction as HTML, a probability gauge, and a SHAP explanation chart.
-    """
     data = {
         "gender": gender,
         "Partner": Partner,
@@ -58,8 +103,9 @@ def gradio_interface(gender, Partner, Dependents, PhoneService, MultipleLines, I
     }
 
     try:
-        result = predict_details(data, explain=True)
-        high_risk = result["is_churn"]
+        # Cette fonction devra retourner les détails de la prédiction
+        result = predict_details(data)
+        high_risk = result["probability"] >= result["threshold"]
 
         if high_risk:
             color = "#ff6366"
@@ -95,23 +141,25 @@ def gradio_interface(gender, Partner, Dependents, PhoneService, MultipleLines, I
                 font-size: 1.05rem;
                 font-weight: 700;
             ">
-                {result["prediction"]} ({result["churn_probability"]:.1%})
+                {result["prediction"]} ({result["probability"]:.1%})
             </div>
         </div>
         """
 
-        gauge_figure = create_risk_gauge(probability=result["churn_probability"], threshold=result["threshold"])
-        shap_figure = create_shap_chart(factors=result["top_factors"])
+        gauge_figure = create_risk_gauge(probability=result["probability"], threshold=result["threshold"])
+        shap_figure = create_shap_chart(encoded_data=result["top_factors"])
 
         return (
             prediction_html,
 
+            # Rend la jauge visible
             gr.Plot(
                 value=gauge_figure,
                 visible=True,
                 label="Churn Probability"
             ),
 
+            # Rend le graphique SHAP visible
             gr.Plot(
                 value=shap_figure,
                 visible=True,
@@ -126,7 +174,11 @@ def gradio_interface(gender, Partner, Dependents, PhoneService, MultipleLines, I
 # GRADIO USER INTERFACE
 with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
 
+    # Ligne principale :
+    # espace gauche | formulaire central | espace droit
     with gr.Row():
+        
+        # Espace vide à gauche
         with gr.Column(scale=1, min_width=0):
             gr.HTML("")
 
@@ -134,7 +186,11 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
 
             gr.HTML(
             """
-            <section style="max-width: 760px; margin: 0 auto 32px auto; text-align: center">
+            <section style="
+                max-width: 760px;
+                margin: 0 auto 32px auto;
+                text-align: center;
+            ">
                 <p style="
                     margin: 0 0 8px 0;
                     font-size: 0.78rem;
@@ -142,22 +198,28 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                     letter-spacing: 0.12em;
                     text-transform: uppercase;
                     opacity: 0.65;
-                ">Educational Machine Learning Demo</p>
+                ">
+                    Educational Machine Learning Demo
+                </p>
 
                 <h1 style="
                     margin: 0 0 14px 0;
                     color: #7373E6;
                     font-size: 2.2rem;
                     line-height: 1.2;
-                ">Telco Customer Churn Predictor</h1>
+                ">
+                    Telco Customer Churn Predictor
+                </h1>
 
                 <p style="
                     margin: 0 0 10px 0;
                     font-size: 1.1rem;
                     font-weight: 600;
-                ">Estimate churn risk and understand the factors behind each prediction.</p>
-               
-               <p style="max-width: 650px;
+                ">
+                    Estimate churn risk and understand the factors behind each prediction.
+
+                <p style="
+                    max-width: 650px;
                     margin: 0 auto;
                     line-height: 1.6;
                     opacity: 0.78;
@@ -171,6 +233,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
         )
 
             with gr.Row(equal_height=False):
+
                 with gr.Column(scale=1, min_width=235):
                     gr.Markdown("### Customer and Services")
 
@@ -198,7 +261,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                     )
 
                     tenure_input = gr.Number(
-                        value=20,
+                        value=6,
                         minimum=0,
                         maximum=100,
                         label="Tenure",
@@ -216,7 +279,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
 
                     multiple_lines_input = gr.Dropdown(
                         choices=["Yes", "No", "No phone service"],
-                        value="Yes",
+                        value="No",
                         label="Multiple Lines",
                         info="Does the customer have multiple phone lines?",
                         show_label=True
@@ -224,14 +287,14 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
 
                     internet_service_input = gr.Dropdown(
                         choices=["DSL", "Fiber optic", "No"],
-                        value="DSL",
+                        value="Fiber optic",
                         label="Internet Service",
                         info="Type of internet service.",
                         show_label=True
                     )
 
                     monthly_charges_input = gr.Number(
-                        value=20.0,
+                        value=50.0,
                         minimum=0,
                         maximum=200,
                         label="Monthly Charges ($)",
@@ -240,7 +303,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                     )
 
                     total_charges_input = gr.Number(
-                        value=400.0,
+                        value=300.0,
                         minimum=0,
                         maximum=10000,
                         label="Total Charges ($)",
@@ -248,6 +311,9 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                         show_label=True
                     )
 
+                # =============================================
+                # RIGHT COLUMN
+                # =============================================
                 with gr.Column(scale=1, min_width=235):
                     gr.Markdown("### Options and Contract")
 
@@ -322,12 +388,15 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                             "Bank transfer (automatic)",
                             "Credit card (automatic)"
                         ],
-                        value="Credit card (automatic)",
+                        value="Electronic check",
                         label="Payment Method",
                         info="Customer's payment method.",
                         show_label=True
                     )
 
+            # =================================================
+            # INPUT ORDER
+            # =================================================
             all_inputs = [
                 gender_input,
                 partner_input,
@@ -349,17 +418,26 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                 total_charges_input,
             ]
 
+            # =================================================
+            # PREDICTION BUTTON
+            # =================================================
             predict_button = gr.Button("Predict churn", variant="primary")
 
+            # =================================================
+            # PREDICTION RESULT
+            # =================================================
             prediction_output = gr.HTML(
                 container=True,
                 padding=True,
             )
-
+        # Espace vide à droite
         with gr.Column(scale=1, min_width=0):
             gr.HTML("")
 
+    # ========================================================
     # PREDICTION VISUALIZATIONS
+    # Hidden before the first prediction
+    # ========================================================
     with gr.Row(equal_height=True):
         gauge_output = gr.Plot(
             label="Churn Probability",
@@ -373,7 +451,9 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
             scale=3
         )
     
+    # Le bloc Examples reste après les graphiques 
     with gr.Accordion("Example customers", open=False):
+        # Champ caché utilisé uniquement comme première colonne du tableau
         risk_profile_input = gr.Textbox(
             label="Risk profile",
             visible=False,
@@ -387,17 +467,14 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                 ["High churn risk", "Male", "No", "No", "No", "No", "Fiber optic", "No", "No", "No", "No", "Yes", "Yes", "Month-to-month", "Yes", "Electronic check", 1, 40.0, 40.0],
 
                 # Low churn risk
-                ["Low churn risk", "Female", "Yes", "Yes", "Yes", "Yes", "DSL", "Yes", "Yes", "Yes", "Yes", "No", "No", "Two year", "No", "Credit card (automatic)", 10, 30.0, 300.0]
+                ["Low churn risk", "Female", "Yes", "Yes", "Yes", "Yes", "DSL", "Yes", "Yes", "Yes", "Yes", "No", "No", "Two year", "No", "Credit card (automatic)", 24, 30.0, 720.0]
             ],
             inputs=[risk_profile_input, *all_inputs],
         )
-
-    gr.Markdown(
-        """</p>
+    gr.Markdown("""</p>
             <strong>Data notice:</strong> This educational application uses an anonymized sample dataset provided by IBM and made publicly available on 
             <a href=https://www.kaggle.com/datasets/blastchar/telco-customer-churn/data>Kaggle</a>.
-        </p>"""
-    )
+            </p>""")
 
     gr.HTML(
         """
@@ -422,7 +499,10 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
         """
     )
 
+
+    # ========================================================
     # PREDICTION EVENT
+    # ========================================================
     predict_button.click(
         fn=gradio_interface,
         inputs=all_inputs,
@@ -432,3 +512,6 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
             shap_output
         ]
     )
+
+
+app = gr.mount_gradio_app(app, demo, path="/churn-predictor_demo_cap-ia", theme=newspaper_theme, head=GRADIO_HEAD)
