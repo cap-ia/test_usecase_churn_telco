@@ -33,7 +33,7 @@ except Exception as error:
 def gradio_interface(gender, Partner, Dependents, PhoneService, MultipleLines, InternetService, OnlineSecurity, OnlineBackup, DeviceProtection, 
                      TechSupport, StreamingTV, StreamingMovies, Contract, PaperlessBilling, PaymentMethod, tenure, MonthlyCharges, TotalCharges):
     """Predict churn from the Gradio form and prepare the displayed results.
-
+    
     Arguments must follow the order of `all_inputs`. Returns the prediction as HTML, a probability gauge, and a SHAP explanation chart.
     """
     data = {

@@ -22,7 +22,20 @@ EXPERIMENT_NAME = "telco_churn_lightgbm"
 
 
 def objective(trial, X_train, y_train, folds):
-    """Every fold fits its own WOE encoder, imputer, weights, and LightGBM."""
+    """"Evaluate one set of LightGBM parameters using stratified cross-validation.
+
+    A new pipeline, including its WOE encoder, is fitted on the training portion of each fold. The validation portion is used only for scoring.
+
+    Args:
+        trial: Optuna trial used to suggest LightGBM hyperparameters.
+        X_train: Customer features from the training set.
+        y_train: Binary churn labels corresponding to X_train.
+        folds: Number of cross-validation folds.
+
+    Returns:
+        Mean validation recall across the folds.
+    """
+
     depth = trial.suggest_int("max_depth", 3, 8)
     params = {
         "max_depth": depth,
@@ -36,6 +49,7 @@ def objective(trial, X_train, y_train, folds):
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
         "min_split_gain": trial.suggest_float("min_split_gain", 0.0, 1.0),
     }
+    
     cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
     recalls = []
     for train_indices, val_indices in cv.split(X_train, y_train):
@@ -43,10 +57,18 @@ def objective(trial, X_train, y_train, folds):
         model.fit(X_train.iloc[train_indices], y_train.iloc[train_indices])
         prediction = model.predict(X_train.iloc[val_indices])
         recalls.append(recall_score(y_train.iloc[val_indices], prediction))
+
     return float(np.mean(recalls))
 
 
 def main():
+    """Train, evaluate, and register the churn prediction pipeline.
+
+    Reads the command-line options --data, --trials, and --folds. Splits off a test set, tunes hyperparameters on the training set, fits the 
+    final pipeline on that training set, then evaluates it on the test set. Logs the results to MLflow and assigns the registered model version 
+    the "candidate" alias.
+    """
+
     parser = argparse.ArgumentParser(description="Train and register the LightGBM churn pipeline.")
     parser.add_argument("--data", type=Path, default=DATA_PATH)
     parser.add_argument("--trials", type=int, default=30)
@@ -80,6 +102,7 @@ def main():
             "test_pr_auc": average_precision_score(y_test, probabilities),
             "cv_recall": study.best_value,
         }
+
         mlflow.log_params({"encoding": "WOE", "threshold": THRESHOLD, "folds": args.folds, "trials": args.trials, **study.best_params})
         mlflow.log_metrics({key: float(value) for key, value in metrics.items()})
 
@@ -98,12 +121,9 @@ def main():
                 "lightgbm>=4.3", "cloudpickle>=3",
             ],
         )
+
         version = mlflow.register_model(logged.model_uri, MODEL_NAME)
         MlflowClient().set_registered_model_alias(MODEL_NAME, "candidate", version=version.version)
-
-        print(f"MLflow run: {run.info.run_id}")
-        print(f"Registered {MODEL_NAME} version {version.version} as candidate")
-        print({key: round(float(value), 3) for key, value in metrics.items()})
 
 
 if __name__ == "__main__":
