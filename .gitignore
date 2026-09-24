@@ -16,6 +16,7 @@ mlruns/
 artifacts/
 data/
 .gradio/flagged/
+mlflow.db
 
 # BUT keep our bundled serving model in the repo
 !/model/

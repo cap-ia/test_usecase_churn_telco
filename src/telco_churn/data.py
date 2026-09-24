@@ -14,7 +14,7 @@ def load_raw_data(file_path: str) -> pd.DataFrame:
         A DataFrame containing the raw customer records.
     """
     if not os.path.exists(file_path):
-        raise FileExistsError(f"File not found: {file_path}")
+        raise FileNotFoundError(f"File not found: {file_path}")
 
     return pd.read_csv(file_path)
 
@@ -59,7 +59,7 @@ def extract_target(df: pd.DataFrame, target_col: str = "Churn") -> tuple[pd.Data
     if target_col not in df:
         raise ValueError(f"Missing target column: {target_col}")
     
-    if target_col in df.columns and is_string_dtype(df["Churn"]):
+    if target_col in df.columns and is_string_dtype(df[target_col]):
         df[target_col] = df[target_col].str.strip().map({"No": 0, "Yes": 1})
 
     y = df[target_col].astype(int).rename(target_col)

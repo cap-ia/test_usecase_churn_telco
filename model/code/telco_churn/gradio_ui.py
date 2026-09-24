@@ -397,7 +397,7 @@ with gr.Blocks(title="Telco Churn Predictor", fill_width=True) as demo:
                 ["High churn risk", "Male", "0", "No", "No", "No", "No phone service", "Fiber optic", "No", "No", "No", "No", "Yes", "Yes", "Month-to-month", "Yes", "Electronic check", 1, 40.0, 40.0],
 
                 # Low churn risk
-                ["Low churn risk", "Female", "0", "Yes", "Yes", "Yes", "Yes", "DSL", "Yes", "Yes", "Yes", "Yes", "No", "No", "Two year", "No", "Credit card (automatic)", 10, 30.0, 300.0],
+                ["Low churn risk", "Female", "1", "Yes", "Yes", "Yes", "Yes", "DSL", "Yes", "Yes", "Yes", "Yes", "No", "No", "Two year", "No", "Credit card (automatic)", 10, 30.0, 300.0],
             ],
             inputs=[risk_profile_input, *all_inputs],
         )

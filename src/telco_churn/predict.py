@@ -13,7 +13,7 @@ from . import preprocessing as preprocessing_module
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_URI = "models:/telco_churn_lightgbm_woe@candidate"
+DEFAULT_URI = str(ROOT / "model")
 
 
 @lru_cache(maxsize=1)
@@ -28,6 +28,7 @@ def load_model():
 
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI", f"sqlite:///{ROOT / 'mlflow.db'}")
     mlflow.set_tracking_uri(tracking_uri)
+    mlflow.set_registry_uri(os.getenv("MLFLOW_REGISTRY_URI", tracking_uri))
     sys.modules.setdefault("preprocessing", preprocessing_module)
     return mlflow.sklearn.load_model(os.getenv("TELCO_MODEL_URI", DEFAULT_URI))
 

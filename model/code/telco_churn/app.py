@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import Literal
 import gradio as gr
 
 from .predict import load_model, predict
@@ -20,13 +21,16 @@ def root():
 
 @app.get("/health/ready")
 def ready():
-    load_model()
+    try:
+        load_model()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Model unavailable") from exc
     return {"status": "ready"}
 
 
 class CustomerData(BaseModel):
     gender: str
-    SeniorCitizen: str
+    SeniorCitizen: Literal["0", "1"]
     Partner: str
     Dependents: str
     PhoneService: str
@@ -48,11 +52,7 @@ class CustomerData(BaseModel):
 
 @app.post("/predict")
 def get_prediction(data: CustomerData):
-    try:
-        result = predict(data.dict)
-        return {"prediction": result}
-    except Exception as e:
-        return {"error": str(e)}
+    return {"prediction": predict(data.model_dump())}
 
 
 app = gr.mount_gradio_app(

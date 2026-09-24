@@ -107,6 +107,7 @@ def main():
         mlflow.log_metrics({key: float(value) for key, value in metrics.items()})
 
         example = X_train.loc[:, RAW_COLUMNS].head(5).copy()
+        example["SeniorCitizen"] = example["SeniorCitizen"].astype("string")
         example["TotalCharges"] = pd.to_numeric(example["TotalCharges"], errors="coerce")
         logged = mlflow.sklearn.log_model(
             sk_model=model,

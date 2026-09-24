@@ -145,24 +145,24 @@ def create_shap_chart(factors, top_n: int = 8) -> go.Figure:
             )
         )
 
-        if not positive_features.empty:
-            figure.add_trace(
-                go.Bar(
-                    x=positive_features["contribution"],
-                    y=positive_features["display_name"],
-                    orientation="h",
-                    name="Increases churn risk",
-                    marker_color="#ff6366",
-                    text=[f"{value:+.3f}" for value in positive_features["contribution"]],
-                    textposition="outside",
-                    cliponaxis=False,
-                    hovertemplate=(
-                        "%{y}<br>"
-                        "SHAP contribution: %{x:.4f}"
-                        "<extra></extra>"
-                    ),
-                )
+    if not positive_features.empty:
+        figure.add_trace(
+            go.Bar(
+                x=positive_features["contribution"],
+                y=positive_features["display_name"],
+                orientation="h",
+                name="Increases churn risk",
+                marker_color="#ff6366",
+                text=[f"{value:+.3f}" for value in positive_features["contribution"]],
+                textposition="outside",
+                cliponaxis=False,
+                hovertemplate=(
+                    "%{y}<br>"
+                    "SHAP contribution: %{x:.4f}"
+                    "<extra></extra>"
+                ),
             )
+        )
             
     figure.add_vline(
         x=0,
