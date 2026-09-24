@@ -1,11 +1,10 @@
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import xgboost as xgb
 
-from src.serving.inference import model
 
 def create_risk_gauge(probability: float, threshold: float = 0.35) -> go.Figure:
+    """"""
     probability = float(np.clip(probability, 0, 1))
     threshold = float(np.clip(threshold, 0, 1))
 
@@ -92,14 +91,10 @@ def format_feature_name(feature_name: str) -> str:
     InternetService: Fiber optic
     """
 
-    if "_" in feature_name:
-        column, value = feature_name.split("_", 1)
-        return f"{column}: {value}"
-
-    return feature_name
+    return feature_name.replace("_", " ")
 
 
-def create_shap_chart(encoded_data: pd.DataFrame, top_n: int = 8) -> go.Figure:
+def create_shap_chart(factors, top_n: int = 8) -> go.Figure:
     """
     Crée un graphique local expliquant la prédiction.
 
@@ -107,27 +102,13 @@ def create_shap_chart(encoded_data: pd.DataFrame, top_n: int = 8) -> go.Figure:
     Vert   : diminue le risque de churn.
     """
 
-    if encoded_data.empty:
-        raise ValueError("encoded_data cannot be empty")
-    
-    feature_names = encoded_data.columns.tolist()
 
-    # Récupération du Booster XGBoost
-    booster = model.get_booster()
-
-    # Format attendu par XGBoost
-    data_matrix = xgb.DMatrix(encoded_data, feature_names=feature_names)
-
-    # Contributions SHAP natives de XGBoost
-    contributions = booster.predict(data_matrix, pred_contribs=True)
 
     # La dernière valeur est le biais du modèle
-    shap_values = contributions[0, :-1]
-
-    shap_data = pd.DataFrame({"feature": feature_names, "contribution": shap_values})
-
-    shap_data["absolute_contribution"] = (shap_data["contribution"].abs())
-    shap_data["display_name"] = (shap_data["feature"].apply(format_feature_name))
+    shap_data = pd.DataFrame(factors)
+    shap_data["contribution"] = shap_data["effect"]
+    shap_data["absolute_contribution"] = shap_data["contribution"].abs()
+    shap_data["display_name"] = shap_data.apply(lambda row: f"{format_feature_name(row['feature'])} = {row['value']}", axis=1,)
 
     # Sélection des variables les plus influentes
     top_features = shap_data.nlargest(top_n, "absolute_contribution").sort_values("absolute_contribution")
