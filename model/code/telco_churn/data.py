@@ -5,7 +5,14 @@ from sklearn.model_selection import train_test_split
 
 
 def load_raw_data(file_path: str) -> pd.DataFrame:
-    """"""
+    """Load the raw customer dataset from a CSV file.
+
+    Args:
+        file_path (str): Path to the input CSV file.
+
+    Returns:
+        A DataFrame containing the raw customer records.
+    """
     if not os.path.exists(file_path):
         raise FileExistsError(f"File not found: {file_path}")
 
@@ -13,7 +20,14 @@ def load_raw_data(file_path: str) -> pd.DataFrame:
 
 
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
-    """"""
+    """Clean column names, remove customer IDs, and prepare numeric values.
+
+    Args:
+        df: Raw customer DataFrame.
+
+    Returns:
+        df: The prepared DataFrame. TotalCharges is numeric and missing numeric values are replaced with zero.
+    """
     df.columns = df.columns.str.strip()
 
     for col in ["customerID", "CustomerID", "customer_id"]:
@@ -33,7 +47,15 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def extract_target(df: pd.DataFrame, target_col: str = "Churn") -> tuple[pd.DataFrame, pd.Series]:
-    """"""
+    """Separate customer features from the binary churn target.
+
+    Args:
+        df: DataFrame containing customer features and the target.
+        target_col: Name of the target column. Defaults to "Churn".
+
+    Returns:
+        A tuple (X, y), where X contains the input features and y contains the target encoded as 0 or 1.
+    """
     if target_col not in df:
         raise ValueError(f"Missing target column: {target_col}")
     
@@ -47,5 +69,15 @@ def extract_target(df: pd.DataFrame, target_col: str = "Churn") -> tuple[pd.Data
 
 
 def make_holdout_split(X: pd.DataFrame, y: pd.Series, test_size: float, random_state: int) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    """Split before supervised encoding, imputation, or model selection."""
+    """Create a stratified train/test split before fitting preprocessing.
+
+    Args:
+        X: Customer input features.
+        y: Binary churn target corresponding to the rows of X.
+        test_size: Proportion of rows reserved for the test set.
+        random_state: Seed used to make the split reproducible.
+
+    Returns:
+        X_train, X_test, y_train, and y_test, in that order.
+    """
     return train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=y)

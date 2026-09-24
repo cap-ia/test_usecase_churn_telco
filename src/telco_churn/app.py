@@ -49,7 +49,7 @@ class CustomerData(BaseModel):
 @app.post("/predict")
 def get_prediction(data: CustomerData):
     try:
-        result = predict(data.dict)
+        result = predict(data.model_dump())
         return {"prediction": result}
     except Exception as e:
         return {"error": str(e)}

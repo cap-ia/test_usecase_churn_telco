@@ -1,10 +1,18 @@
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import lightgbm as lgb
 
 
 def create_risk_gauge(probability: float, threshold: float = 0.35) -> go.Figure:
+    """Create a gauge comparing churn probability with the decision threshold.
+
+    Args:
+        probability: Predicted churn probability, between 0 and 1.
+        threshold: Probability at or above which churn is predicted. Defaults to 0.35.
+
+    Returns:
+        A Plotly figure showing the probability and threshold as percentages.
+    """
     probability = float(np.clip(probability, 0, 1))
     threshold = float(np.clip(threshold, 0, 1))
 
@@ -82,38 +90,36 @@ def create_risk_gauge(probability: float, threshold: float = 0.35) -> go.Figure:
 
 
 def format_feature_name(feature_name: str) -> str:
+    """Make a feature name easier to read by replacing underscores with spaces.
+
+    Args:
+        feature_name: Name of a model feature.
+
+    Returns:
+        The feature name with underscores replaced by spaces.
     """
-    Rend le nom d'une variable one-hot plus facile à lire.
 
-    Exemple :
-    InternetService_Fiber optic
-    devient :
-    InternetService: Fiber optic
-    """
-
-    if "_" in feature_name:
-        column, value = feature_name.split("_", 1)
-        return f"{column}: {value}"
-
-    return feature_name
+    return feature_name.replace("_", " ")
 
 
 def create_shap_chart(factors, top_n: int = 8) -> go.Figure:
+    """Show the features with the largest impact on one churn prediction.
+
+    Positive SHAP values increase the model's churn score, negative values decrease it. These contributions are to the model score, 
+    not directly to the predicted probability.
+
+    Args:
+        factors: List of dictionaries from explain_customer(). Each dictionary contains "feature", "value", and "effect".
+        top_n: Maximum number of features to display. Defaults to 8.
+
+    Returns:
+        A Plotly bar chart of the selected SHAP contributions.
     """
-    Crée un graphique local expliquant la prédiction.
+    shap_data = pd.DataFrame(factors)
+    shap_data["contribution"] = shap_data["effect"]
+    shap_data["absolute_contribution"] = shap_data["contribution"].abs()
+    shap_data["display_name"] = shap_data.apply(lambda row: f"{format_feature_name(row['feature'])} = {row['value']}", axis=1,)
 
-    Rouge  : augmente le risque de churn.
-    Vert   : diminue le risque de churn.
-    """
-
-
-
-    # La dernière valeur est le biais du modèle
-    shap_data = list(reversed(factors))
-    shap_data["absolute_contribution"] = (shap_data["contribution"].abs())
-    shap_data["display_name"] = (shap_data["feature"].apply(format_feature_name))
-
-    # Sélection des variables les plus influentes
     top_features = shap_data.nlargest(top_n, "absolute_contribution").sort_values("absolute_contribution")
     positive_features = top_features[top_features["contribution"] >= 0]
     negative_features = top_features[top_features["contribution"] < 0]
