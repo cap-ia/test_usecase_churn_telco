@@ -1,23 +1,36 @@
-# venvs
-.venv/
+# Environnements Python
+.venv*/
 venv/
 env/
 
-# OS cruft
-.DS_Store
-
-# Python cache
+# Caches et résultats des tests
 __pycache__/
 *.py[cod]
-*.pyo
+.pytest_cache/
+.coverage*
+htmlcov/
+.ipynb_checkpoints/
 
-# Big artifacts we don't want in git
-mlruns/
-artifacts/
-data/
-.gradio/flagged/
-mlflow.db
+# Fichiers locaux
+.DS_Store
+.vscode/
+.idea/
+.env
+.env.*
+!.env.example
 
-# BUT keep our bundled serving model in the repo
+# Données et artefacts générés
+/data/
+/mlruns/
+/mlartifacts/
+/artifacts/
+/mlflow.db*
+/.gradio/flagged/
+
+# Modèle exporté et inclus dans l'image Docker
 !/model/
 !/model/**
+
+# Ne pas conserver les caches présents dans le modèle exporté
+/model/**/__pycache__/
+/model/**/*.py[cod]

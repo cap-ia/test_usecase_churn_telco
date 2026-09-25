@@ -1,3 +1,5 @@
+from pathlib import Path
+import yaml
 import numpy as np
 import pandas as pd
 from category_encoders import WOEEncoder
@@ -5,6 +7,10 @@ from lightgbm import LGBMClassifier
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
+
+ROOT = Path(__file__).resolve().parents[2]
+CONFIG = yaml.safe_load((ROOT / "configs/train.yaml").read_text(encoding="utf-8"))
+THRESHOLD = CONFIG["threshold"]
 
 RAW_COLUMNS = [
     "gender", "SeniorCitizen", "Partner", "Dependents", "tenure", "PhoneService", "MultipleLines", "InternetService", "OnlineSecurity", "OnlineBackup", 
@@ -30,8 +36,6 @@ CHOICES = {
     "PaperlessBilling": ["No", "Yes"],
     "PaymentMethod": ["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)",],
 }
-
-THRESHOLD = 0.35
 
 
 class FeatureBuilder(BaseEstimator, TransformerMixin):

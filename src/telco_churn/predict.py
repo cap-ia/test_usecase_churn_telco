@@ -20,7 +20,7 @@ DEFAULT_URI = str(ROOT / "model")
 def load_model():
     """Load and cache the fitted churn pipeline from MLflow.
 
-    Uses TELCO_MODEL_URI when it is set, otherwise, loads the model registered under the "candidate" alias.
+    Uses TELCO_MODEL_URI when it is set.
 
     Returns:
         The fitted model, including preprocessing and LightGBM.

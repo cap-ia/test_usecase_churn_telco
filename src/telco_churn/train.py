@@ -14,14 +14,15 @@ from sklearn.metrics import average_precision_score, f1_score, precision_score, 
 from sklearn.model_selection import StratifiedKFold
 
 from .data import load_raw_data, preprocess_data, extract_target, make_holdout_split
-from .preprocessing import ChurnModel, RAW_COLUMNS, THRESHOLD
+from .preprocessing import ChurnModel, RAW_COLUMNS
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = yaml.safe_load((ROOT / "configs/train.yaml").read_text(encoding="utf-8"))
 DATA_PATH = ROOT / CONFIG["data_path"]
 MODEL_NAME = CONFIG["model_name"]
 EXPERIMENT_NAME = CONFIG["experiment_name"]
-
+RANDOM_STATE = CONFIG["random_state"]
+THRESHOLD = CONFIG["threshold"]
 
 def objective(trial, X_train, y_train, folds):
     """"Evaluate one set of LightGBM parameters using stratified cross-validation.
@@ -52,7 +53,7 @@ def objective(trial, X_train, y_train, folds):
         "min_split_gain": trial.suggest_float("min_split_gain", 0.0, 1.0),
     }
     
-    cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
+    cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=RANDOM_STATE)
     recalls = []
     for train_indices, val_indices in cv.split(X_train, y_train):
         model = ChurnModel(model_params=params)
@@ -87,10 +88,10 @@ def main():
     data = load_raw_data(args.data)
     data = preprocess_data(data)
     X, y = extract_target(data)
-    X_train, X_test, y_train, y_test = make_holdout_split(X, y, CONFIG["test_size"], 42)
+    X_train, X_test, y_train, y_test = make_holdout_split(X, y, CONFIG["test_size"], RANDOM_STATE)
 
     with mlflow.start_run(run_name="lightgbm_woe_optuna") as run:
-        study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(seed=42))
+        study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE))
         study.optimize(lambda trial: objective(trial, X_train, y_train, args.folds), n_trials=args.trials)
 
         model = ChurnModel(model_params=study.best_params).fit(X_train, y_train)

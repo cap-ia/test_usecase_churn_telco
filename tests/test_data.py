@@ -4,9 +4,9 @@ import pytest
 from telco_churn.data import load_raw_data, preprocess_data, extract_target, make_holdout_split
 
 
-def test_load_raw_data_raises_for_missing_file(path):
+def test_load_raw_data_raises_for_missing_file(tmp_path):
     with pytest.raises(FileNotFoundError):
-        load_raw_data(path / "missing.csv")
+        load_raw_data(tmp_path / "missing.csv")
 
 
 def test_preprocess_data_cleans_columns_and_fills_numeric_values():
