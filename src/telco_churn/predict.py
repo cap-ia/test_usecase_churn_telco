@@ -96,11 +96,14 @@ def explain_customer(model, raw: pd.DataFrame) -> list[dict]:
 
     encoded = model.encoded_features(raw)
     values = shap.TreeExplainer(model.pipeline_.named_steps["model"]).shap_values(encoded)
+
     if isinstance(values, list):
         values = values[1]
     values = np.asarray(values)
+
     if values.ndim == 3:
         values = values[:, :, 1]
+        
     if values.shape != encoded.shape:
         raise ValueError(f"Unexpected SHAP shape: {values.shape}")
 

@@ -86,6 +86,7 @@ def create_risk_gauge(probability: float, threshold: float = 0.35) -> go.Figure:
         plot_bgcolor="rgba(0,0,0,0)",
         font={"color": "#f8fafc"},
     )
+    
     return figure
 
 

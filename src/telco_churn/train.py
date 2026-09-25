@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import optuna
 import pandas as pd
+import yaml
 import mlflow
 import mlflow.sklearn
 from mlflow.models import infer_signature
@@ -16,9 +17,10 @@ from .data import load_raw_data, preprocess_data, extract_target, make_holdout_s
 from .preprocessing import ChurnModel, RAW_COLUMNS, THRESHOLD
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA_PATH = ROOT / "data/external/Telco-Customer-Churn.csv"
-MODEL_NAME = "telco_churn_lightgbm_woe"
-EXPERIMENT_NAME = "telco_churn_lightgbm"
+CONFIG = yaml.safe_load((ROOT / "configs/train.yaml").read_text(encoding="utf-8"))
+DATA_PATH = ROOT / CONFIG["data_path"]
+MODEL_NAME = CONFIG["model_name"]
+EXPERIMENT_NAME = CONFIG["experiment_name"]
 
 
 def objective(trial, X_train, y_train, folds):
@@ -71,8 +73,8 @@ def main():
 
     parser = argparse.ArgumentParser(description="Train and register the LightGBM churn pipeline.")
     parser.add_argument("--data", type=Path, default=DATA_PATH)
-    parser.add_argument("--trials", type=int, default=30)
-    parser.add_argument("--folds", type=int, default=5)
+    parser.add_argument("--trials", type=int, default=CONFIG["trials"])
+    parser.add_argument("--folds", type=int, default=CONFIG["folds"])
     args = parser.parse_args()
     if args.trials < 1 or args.folds < 2:
         parser.error("Use at least one Optuna trial and two CV folds.")
@@ -85,7 +87,7 @@ def main():
     data = load_raw_data(args.data)
     data = preprocess_data(data)
     X, y = extract_target(data)
-    X_train, X_test, y_train, y_test = make_holdout_split(X, y, 0.2, 42)
+    X_train, X_test, y_train, y_test = make_holdout_split(X, y, CONFIG["test_size"], 42)
 
     with mlflow.start_run(run_name="lightgbm_woe_optuna") as run:
         study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(seed=42))
